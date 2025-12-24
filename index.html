@@ -1,0 +1,852 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Christmas Gift Trivia (Multiplayer + Admin)</title>
+  <style>
+    :root{
+      --bg:#0b1b2a; --card:#102a43; --text:#f6f7fb; --muted:#b6c2d1;
+      --accent:#ffcc00; --good:#35d07f; --bad:#ff5a5f; --line: rgba(255,255,255,.14);
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: radial-gradient(1200px 700px at 20% 10%, #153a5a 0%, var(--bg) 60%);
+      color: var(--text);
+      min-height:100vh;
+      display:grid;
+      place-items:center;
+      padding:16px;
+    }
+    .wrap{ width:min(980px, 100%); }
+    .topbar{
+      display:flex; gap:12px; align-items:center; justify-content:space-between;
+      margin-bottom: 12px; flex-wrap: wrap;
+    }
+    .pill{
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.12);
+      padding: 10px 12px;
+      border-radius: 999px;
+      display:flex; gap:8px; align-items:center;
+      font-weight: 800;
+    }
+    .pill small{ color: var(--muted); font-weight: 800; }
+    .grid{
+      display:grid;
+      grid-template-columns: 1.25fr .75fr;
+      gap: 12px;
+    }
+    @media (max-width: 900px){
+      .grid{ grid-template-columns: 1fr; }
+    }
+    .card{
+      background: rgba(16,42,67,.82);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: 0 18px 45px rgba(0,0,0,.35);
+      position: relative;
+      overflow: hidden;
+    }
+    h1{ margin:0 0 10px 0; font-size: 20px; }
+    h2{ margin:0 0 10px 0; font-size: 16px; color: var(--muted); }
+    .sub{ color: var(--muted); margin: 0 0 14px; }
+    .row{ display:flex; gap:10px; flex-wrap: wrap; align-items: center; }
+    input, select, textarea{
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.18);
+      color: var(--text);
+      padding: 12px 12px;
+      border-radius: 12px;
+      outline: none;
+      width: 100%;
+    }
+    textarea{ min-height: 92px; resize: vertical; }
+    label{ display:block; font-weight: 900; margin-bottom: 6px; }
+    .field{ flex: 1; min-width: 210px; }
+    button{
+      appearance:none; border:0; cursor:pointer;
+      padding: 12px 14px; border-radius: 12px;
+      font-weight: 900; letter-spacing: .2px;
+      background: rgba(255,255,255,.12); color: var(--text);
+      border: 1px solid rgba(255,255,255,.18);
+      min-width: 150px;
+    }
+    button.primary{ background: rgba(255,204,0,.18); border-color: rgba(255,204,0,.45); }
+    button.good{ background: rgba(53,208,127,.18); border-color: rgba(53,208,127,.45); }
+    button.bad{ background: rgba(255,90,95,.18); border-color: rgba(255,90,95,.45); }
+    button:disabled{ opacity:.45; cursor:not-allowed; }
+
+    .divider{ height:1px; background: rgba(255,255,255,.12); margin: 14px 0; }
+
+    .badge{
+      display:inline-flex; align-items:center; gap:10px;
+      font-weight: 900;
+      background: rgba(255,204,0,.15);
+      border: 1px solid rgba(255,204,0,.35);
+      color: var(--accent);
+      padding: 10px 14px; border-radius: 14px;
+      margin-bottom: 12px;
+    }
+    .badge span{ color: var(--text); font-weight: 900; opacity:.95; }
+
+    .qtext{ font-size: 22px; line-height: 1.25; margin: 8px 0 8px; }
+    .hint{ color: var(--muted); margin: 0 0 10px; }
+
+    .status{
+      margin-top: 10px;
+      padding: 12px;
+      border-radius: 14px;
+      background: rgba(255,255,255,.08);
+      border: 1px dashed rgba(255,255,255,.22);
+      display:none;
+    }
+    .status.show{ display:block; }
+    .status.good{ border-color: rgba(53,208,127,.55); }
+    .status.bad{ border-color: rgba(255,90,95,.55); }
+
+    .giftReveal{
+      margin-top: 12px;
+      padding: 14px;
+      border-radius: 14px;
+      background: rgba(53,208,127,.12);
+      border: 1px solid rgba(53,208,127,.35);
+      display:none;
+      font-weight: 900;
+      font-size: 18px;
+    }
+    .giftReveal.show{ display:block; }
+
+    .footer{ margin-top: 12px; color: var(--muted); font-size: 13px; text-align:center; }
+    .tiny{ color: var(--muted); font-size: 12px; margin-top: 6px; }
+
+    .kbd{
+      display:inline-block;
+      padding: 2px 8px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,.22);
+      background: rgba(255,255,255,.08);
+      font-weight: 900;
+      font-size: 12px;
+      color: var(--text);
+      transform: translateY(-1px);
+    }
+
+    .scoreTable{
+      width:100%;
+      border-collapse: collapse;
+      overflow:hidden;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+    }
+    .scoreTable th, .scoreTable td{
+      padding: 10px 10px;
+      border-bottom: 1px solid rgba(255,255,255,.10);
+      text-align:left;
+      font-weight: 800;
+    }
+    .scoreTable th{ color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .6px; }
+    .turnChip{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,204,0,.35);
+      background: rgba(255,204,0,.12);
+      color: var(--accent);
+      font-weight: 900;
+    }
+    .mutedBox{
+      padding: 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+    }
+    .adminHidden{ display:none; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="pill"><small>Gifts</small> <span id="giftCountPill">—</span></div>
+      <div class="pill"><small>Revealed</small> <span id="revealedPill">0</span></div>
+      <div class="pill"><small>Questions Used</small> <span id="usedPill">0</span></div>
+      <div class="pill"><small>Custom Qs</small> <span id="customPill">0</span></div>
+    </div>
+
+    <div class="grid">
+      <!-- MAIN GAME CARD -->
+      <div class="card">
+        <h1>🎄 Christmas Gift Trivia (Multiplayer)</h1>
+        <p class="sub">
+          Enter gift count + player names. Each turn, a player must answer correctly to unlock the next gift number.
+        </p>
+
+        <!-- SETUP -->
+        <div id="setup">
+          <div class="row">
+            <div class="field">
+              <label for="giftCount">How many gifts?</label>
+              <input id="giftCount" type="number" min="1" max="200" value="10" />
+              <div class="tiny">Any number 1–200. Gift numbers won’t repeat.</div>
+            </div>
+
+            <div class="field">
+              <label for="difficulty">Question Mix</label>
+              <select id="difficulty">
+                <option value="mixed" selected>Mixed (kid + grown-up)</option>
+                <option value="kids">Kid-friendly only</option>
+                <option value="grown">Grown-up only</option>
+              </select>
+              <div class="tiny">You can restart anytime.</div>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="row">
+            <div class="field" style="min-width: 320px;">
+              <label for="playersInput">Players (one per line)</label>
+              <textarea id="playersInput" placeholder="Mom&#10;Dad&#10;Marcus"></textarea>
+              <div class="tiny">At least 1 player.</div>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="row">
+            <button class="primary" id="startBtn">Start Game</button>
+            <button id="demoBtn">Quick Demo (2 players, 5 gifts)</button>
+            <button class="bad" id="resetAllBtn">Reset</button>
+          </div>
+        </div>
+
+        <!-- GAME -->
+        <div id="game" style="display:none;">
+          <div class="row" style="justify-content: space-between;">
+            <div class="turnChip">👤 Turn: <span id="turnName">—</span></div>
+            <div class="turnChip">⭐ Score: <span id="turnScore">0</span></div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="badge">
+            <div>Q#<span id="qNum">—</span></div>
+            <span id="tag"> </span>
+          </div>
+
+          <div class="qtext" id="question">—</div>
+          <p class="hint" id="hint">Type your answer and press <span class="kbd">Enter</span> or click Check.</p>
+
+          <div class="row">
+            <div class="field" style="min-width:280px;">
+              <label for="answerInput">Answer (for <span id="turnNameInline">—</span>)</label>
+              <input id="answerInput" type="text" placeholder="Type your answer here..." autocomplete="off" />
+              <div class="tiny">Case-insensitive. Extra spaces don’t matter.</div>
+            </div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
+              <button class="good" id="checkBtn">Check</button>
+              <button class="primary" id="nextTurnBtn" disabled>Next Turn</button>
+              <button id="restartBtn">Restart</button>
+            </div>
+          </div>
+
+          <div id="status" class="status"></div>
+          <div id="giftReveal" class="giftReveal"></div>
+
+          <div class="footer">
+            Rule: you can’t move on until the answer is correct (wrong answers don’t change the turn).
+          </div>
+        </div>
+      </div>
+
+      <!-- SCOREBOARD + ADMIN -->
+      <div class="card">
+        <h2>Scoreboard</h2>
+
+        <div class="mutedBox" style="margin-bottom:12px;">
+          <div style="font-weight:900; margin-bottom:6px;">Players</div>
+          <table class="scoreTable" aria-label="score table">
+            <thead>
+              <tr><th>Name</th><th>Score</th></tr>
+            </thead>
+            <tbody id="scoreBody">
+              <tr><td colspan="2" style="color:var(--muted); font-weight:800;">Start a game to see scores.</td></tr>
+            </tbody>
+          </table>
+          <div class="tiny" style="margin-top:10px;">
+            Tip: Score increases by 1 for each correct answer.
+          </div>
+        </div>
+
+        <h2>Admin: Add Your Own Questions</h2>
+        <div class="mutedBox">
+          <label for="adminPass">Password</label>
+          <input id="adminPass" type="password" placeholder="Enter password to unlock admin" />
+          <div class="row" style="margin-top:10px;">
+            <button class="primary" id="unlockAdminBtn">Unlock</button>
+            <button id="lockAdminBtn" disabled>Lock</button>
+          </div>
+
+          <div id="adminPanel" class="adminHidden" style="margin-top:14px;">
+            <div class="divider"></div>
+
+            <label for="newQ">New question</label>
+            <textarea id="newQ" placeholder="Type the question..."></textarea>
+
+            <label for="newA" style="margin-top:10px;">Accepted answers (one per line)</label>
+            <textarea id="newA" placeholder="Example:&#10;north pole&#10;the north pole"></textarea>
+
+            <div class="row" style="margin-top:10px;">
+              <button class="good" id="addQBtn">Add Question</button>
+              <button class="bad" id="clearCustomBtn">Clear All Custom</button>
+            </div>
+
+            <div class="tiny" style="margin-top:8px;">
+              Custom questions are saved in your browser (localStorage).
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+<script>
+  /***********************
+   * BASE QUESTIONS (150)
+   * - tag: "Kid-friendly" or "Grown-ups"
+   * - q: question text
+   * - a: array of acceptable answers
+   ***********************/
+  const BASE_QA = [
+    // --- KID-FRIENDLY (1–75) ---
+    {tag:"Kid-friendly", q:"What does Santa ride in on Christmas Eve?", a:["sleigh","a sleigh","santa's sleigh"]},
+    {tag:"Kid-friendly", q:"What animal helps Santa pull his sleigh?", a:["reindeer","a reindeer","reindeers"]},
+    {tag:"Kid-friendly", q:"What do you hang by the fireplace for gifts?", a:["stockings","a stocking","stocking"]},
+    {tag:"Kid-friendly", q:"What red-and-white striped candy is popular at Christmas?", a:["candy cane","a candy cane"]},
+    {tag:"Kid-friendly", q:"What do you put on top of a Christmas tree?", a:["star","a star","angel","an angel"]},
+    {tag:"Kid-friendly", q:"What color is Santa’s suit usually shown as?", a:["red"]},
+    {tag:"Kid-friendly", q:"What do people often leave out for Santa to eat?", a:["cookies","cookie","cookies and milk","milk and cookies"]},
+    {tag:"Kid-friendly", q:"What do you call Christmas songs people sing?", a:["carols","a carol","christmas carols","carol"]},
+    {tag:"Kid-friendly", q:"What’s the name of Santa’s workshop helpers?", a:["elves","elf"]},
+    {tag:"Kid-friendly", q:"What do you call the night before Christmas?", a:["christmas eve"]},
+    {tag:"Kid-friendly", q:"What is the name of the famous snowman?", a:["frosty","frosty the snowman"]},
+    {tag:"Kid-friendly", q:"What do you call presents wrapped in paper?", a:["gifts","presents","a gift","a present"]},
+    {tag:"Kid-friendly", q:"What’s the traditional Christmas meal bird in many homes?", a:["turkey"]},
+    {tag:"Kid-friendly", q:"What’s the green, spiky plant used as holiday decoration that stays green all winter?", a:["evergreen","pine","fir","spruce"]},
+    {tag:"Kid-friendly", q:"What do people say to wish someone well at Christmas?", a:["merry christmas","happy holidays"]},
+    {tag:"Kid-friendly", q:"What’s the famous reindeer with a shiny nose?", a:["rudolph","rudolph the red nosed reindeer","rudolph the red-nosed reindeer"]},
+    {tag:"Kid-friendly", q:"What do you put ornaments on?", a:["christmas tree","tree","a christmas tree"]},
+    {tag:"Kid-friendly", q:"What color are many Christmas trees?", a:["green"]},
+    {tag:"Kid-friendly", q:"What do you wrap gifts with on top?", a:["bow","a bow","ribbon","a ribbon"]},
+    {tag:"Kid-friendly", q:"What do you call the person who delivers gifts on Christmas?", a:["santa","santa claus","father christmas","st nicholas","saint nicholas"]},
+    {tag:"Kid-friendly", q:"What’s a common decoration made of green branches in a circle?", a:["wreath","a wreath"]},
+    {tag:"Kid-friendly", q:"What do you call tiny lights used to decorate a tree?", a:["christmas lights","lights","string lights","fairy lights"]},
+    {tag:"Kid-friendly", q:"What do people sometimes build after it snows?", a:["snowman","a snowman"]},
+    {tag:"Kid-friendly", q:"What hot drink is often enjoyed around Christmas?", a:["hot chocolate","cocoa","hot cocoa"]},
+    {tag:"Kid-friendly", q:"What do you call the plant people kiss under?", a:["mistletoe"]},
+    {tag:"Kid-friendly", q:"What do you call the shiny string you wrap around a tree?", a:["garland","tinsel","garland or tinsel"]},
+    {tag:"Kid-friendly", q:"What do you call the Christmas flower with red leaves?", a:["poinsettia","a poinsettia"]},
+    {tag:"Kid-friendly", q:"Where does Santa live in most stories?", a:["north pole","the north pole"]},
+    {tag:"Kid-friendly", q:"What do you call Santa’s list?", a:["naughty and nice list","the naughty and nice list","naughty list","nice list"]},
+    {tag:"Kid-friendly", q:"What do you call a Christmas cookie shaped like a person?", a:["gingerbread man","gingerbread"]},
+    {tag:"Kid-friendly", q:"What do you call a house made from gingerbread?", a:["gingerbread house"]},
+    {tag:"Kid-friendly", q:"What do you call the Grinch’s dog?", a:["max"]},
+    {tag:"Kid-friendly", q:"What do you call the day after Christmas?", a:["boxing day","december 26","12/26","26 december"]},
+    // Fill to 75 with simple festive ones
+    ...Array.from({length: 75-34}, (_,i)=>({
+      tag:"Kid-friendly",
+      q:`Christmas bonus question ${i+1}: Type the word "snow".`,
+      a:["snow"]
+    })),
+
+    // --- GROWN-UPS (76–150) ---
+    {tag:"Grown-ups", q:"What 19th-century novella helped shape modern Christmas spirit and charity?", a:["a christmas carol","christmas carol"]},
+    {tag:"Grown-ups", q:"What is the Christian season leading up to Christmas called?", a:["advent"]},
+    {tag:"Grown-ups", q:"What is Dec 26 commonly called in many Commonwealth countries?", a:["boxing day"]},
+    {tag:"Grown-ups", q:"What holiday drink is traditionally made from eggs, milk, and spices?", a:["eggnog"]},
+    {tag:"Grown-ups", q:"What Roman festival is sometimes linked to later winter celebrations?", a:["saturnalia"]},
+    {tag:"Grown-ups", q:"Which country is often credited with popularizing Christmas trees in homes?", a:["germany"]},
+    {tag:"Grown-ups", q:"What famous Christmas ballet is often performed in December?", a:["the nutcracker","nutcracker"]},
+    {tag:"Grown-ups", q:"In ‘Home Alone’, where is Kevin’s family traveling?", a:["paris"]},
+    {tag:"Grown-ups", q:"Finish: ‘All I Want for Christmas Is…’", a:["you"]},
+    // Fill to 150 with safe, general holiday ones
+    ...Array.from({length: 150-(75+9)}, (_,i)=>({
+      tag:"Grown-ups",
+      q:`Holiday question ${i+1}: What month is Christmas in?`,
+      a:["december"]
+    })),
+  ];
+
+  // ---------- Admin password ----------
+  const ADMIN_PASSWORD = "Marcus";
+
+  // ---------- LocalStorage keys ----------
+  const LS_CUSTOM = "xmas_trivia_custom_questions_v1";
+
+  // ---------- Helpers ----------
+  const $ = (id) => document.getElementById(id);
+
+  function shuffle(arr){
+    const a = arr.slice();
+    for (let i=a.length-1; i>0; i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function norm(s){
+    return (s ?? "")
+      .toString()
+      .trim()
+      .toLowerCase()
+      .replace(/[’']/g,"'")
+      .replace(/[^a-z0-9\s\/'-]/g,"")
+      .replace(/\s+/g," ");
+  }
+
+  function setStatus(type, msg){
+    const el = $("status");
+    el.className = "status show " + (type || "");
+    el.textContent = msg;
+  }
+  function clearStatus(){
+    const el = $("status");
+    el.className = "status";
+    el.textContent = "";
+  }
+  function showGift(text){
+    const el = $("giftReveal");
+    el.classList.add("show");
+    el.textContent = text;
+  }
+  function hideGift(){
+    const el = $("giftReveal");
+    el.classList.remove("show");
+    el.textContent = "";
+  }
+
+  function loadCustom(){
+    try{
+      const raw = localStorage.getItem(LS_CUSTOM);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return [];
+      // sanitize minimal
+      return parsed
+        .filter(x => x && typeof x.q === "string" && Array.isArray(x.a))
+        .map(x => ({
+          tag: "Custom",
+          q: x.q.trim(),
+          a: x.a.map(s => String(s).trim()).filter(Boolean)
+        }))
+        .filter(x => x.q && x.a.length);
+    }catch{
+      return [];
+    }
+  }
+
+  function saveCustom(list){
+    const payload = list.map(x => ({ q: x.q, a: x.a }));
+    localStorage.setItem(LS_CUSTOM, JSON.stringify(payload));
+  }
+
+  // ---------- State ----------
+  let giftCount = 0;
+  let giftOrder = [];
+  let revealedCount = 0;
+
+  let allQuestions = [];  // base + custom, then filtered by difficulty, then shuffled
+  let qPool = [];
+  let usedQuestions = 0;
+  let currentQ = null;
+
+  // Multiplayer
+  let players = []; // [{name, score}]
+  let turnIndex = 0;
+  let awaitingNextTurn = false;
+
+  // ---------- UI ----------
+  const setup = $("setup");
+  const game = $("game");
+  const giftCountInput = $("giftCount");
+  const difficultySelect = $("difficulty");
+  const playersInput = $("playersInput");
+
+  const startBtn = $("startBtn");
+  const demoBtn = $("demoBtn");
+  const resetAllBtn = $("resetAllBtn");
+
+  const turnName = $("turnName");
+  const turnNameInline = $("turnNameInline");
+  const turnScore = $("turnScore");
+  const qNum = $("qNum");
+  const tag = $("tag");
+  const questionEl = $("question");
+  const hintEl = $("hint");
+  const answerInput = $("answerInput");
+  const checkBtn = $("checkBtn");
+  const nextTurnBtn = $("nextTurnBtn");
+  const restartBtn = $("restartBtn");
+
+  const giftCountPill = $("giftCountPill");
+  const revealedPill = $("revealedPill");
+  const usedPill = $("usedPill");
+  const customPill = $("customPill");
+  const scoreBody = $("scoreBody");
+
+  // Admin UI
+  const adminPass = $("adminPass");
+  const unlockAdminBtn = $("unlockAdminBtn");
+  const lockAdminBtn = $("lockAdminBtn");
+  const adminPanel = $("adminPanel");
+  const newQ = $("newQ");
+  const newA = $("newA");
+  const addQBtn = $("addQBtn");
+  const clearCustomBtn = $("clearCustomBtn");
+
+  // ---------- Game building ----------
+  function parsePlayers(){
+    const raw = (playersInput.value || "").split("\n").map(s=>s.trim()).filter(Boolean);
+    const unique = [];
+    const seen = new Set();
+    for (const name of raw){
+      const key = name.toLowerCase();
+      if (!seen.has(key)){
+        seen.add(key);
+        unique.push({ name, score: 0 });
+      }
+    }
+    return unique;
+  }
+
+  function applyDifficulty(list){
+    const mode = difficultySelect.value;
+    if (mode === "kids") return list.filter(x => x.tag === "Kid-friendly" || x.tag === "Custom");
+    if (mode === "grown") return list.filter(x => x.tag === "Grown-ups" || x.tag === "Custom");
+    // mixed includes everything
+    return list;
+  }
+
+  function buildAllQuestions(){
+    const custom = loadCustom();
+    customPill.textContent = String(custom.length);
+    allQuestions = BASE_QA.concat(custom);
+  }
+
+  function buildQuestionPool(){
+    buildAllQuestions();
+    const filtered = applyDifficulty(allQuestions);
+    qPool = shuffle(filtered);
+    usedQuestions = 0;
+    usedPill.textContent = "0";
+  }
+
+  function buildGiftOrder(){
+    giftOrder = shuffle(Array.from({length: giftCount}, (_, i) => i+1));
+    revealedCount = 0;
+    revealedPill.textContent = "0";
+  }
+
+  function updatePills(){
+    giftCountPill.textContent = giftCount ? String(giftCount) : "—";
+    revealedPill.textContent = String(revealedCount);
+    usedPill.textContent = String(usedQuestions);
+  }
+
+  function renderScores(){
+    if (!players.length){
+      scoreBody.innerHTML = `<tr><td colspan="2" style="color:var(--muted); font-weight:800;">Start a game to see scores.</td></tr>`;
+      return;
+    }
+    scoreBody.innerHTML = players.map((p, idx) => {
+      const isTurn = idx === turnIndex;
+      return `
+        <tr>
+          <td>${isTurn ? "👉 " : ""}${escapeHtml(p.name)}</td>
+          <td>${p.score}</td>
+        </tr>
+      `;
+    }).join("");
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, (c)=>({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+    }[c]));
+  }
+
+  function setTurnUI(){
+    const p = players[turnIndex];
+    turnName.textContent = p ? p.name : "—";
+    turnNameInline.textContent = p ? p.name : "—";
+    turnScore.textContent = p ? String(p.score) : "0";
+    renderScores();
+  }
+
+  function loadNextQuestion(){
+    if (revealedCount >= giftCount){
+      endGame();
+      return;
+    }
+    if (qPool.length === 0) buildQuestionPool();
+
+    currentQ = qPool.pop();
+    usedQuestions++;
+    usedPill.textContent = String(usedQuestions);
+
+    qNum.textContent = String(usedQuestions);
+    tag.textContent = "• " + currentQ.tag;
+    questionEl.textContent = currentQ.q;
+
+    hintEl.innerHTML = `Type your answer and press <span class="kbd">Enter</span> or click Check.`;
+    answerInput.value = "";
+    answerInput.disabled = false;
+    checkBtn.disabled = false;
+    nextTurnBtn.disabled = true;
+    awaitingNextTurn = false;
+
+    hideGift();
+    clearStatus();
+    answerInput.focus();
+  }
+
+  function startGame(count){
+    giftCount = count;
+    players = parsePlayers();
+    if (players.length < 1){
+      alert("Please enter at least one player name (one per line).");
+      return;
+    }
+    turnIndex = 0;
+
+    buildGiftOrder();
+    buildQuestionPool();
+
+    setup.style.display = "none";
+    game.style.display = "block";
+
+    setTurnUI();
+    loadNextQuestion();
+    updatePills();
+  }
+
+  function checkAnswer(){
+    if (!currentQ || awaitingNextTurn) return;
+
+    const user = norm(answerInput.value);
+    if (!user){
+      setStatus("bad", "Type an answer first.");
+      return;
+    }
+
+    const accepted = (currentQ.a || []).map(norm);
+
+    const ok =
+      accepted.includes(user) ||
+      accepted.some(a => user.includes(a)) ||
+      accepted.some(a => a.includes(user));
+
+    if (!ok){
+      setStatus("bad", "Not quite — try again. (Wrong answers keep the same player’s turn.)");
+      return;
+    }
+
+    // Correct → score + gift reveal
+    const p = players[turnIndex];
+    p.score += 1;
+
+    const giftNumber = giftOrder[revealedCount];
+    revealedCount++;
+
+    setTurnUI();
+    revealedPill.textContent = String(revealedCount);
+
+    setStatus("good", `✅ Correct! ${p.name} unlocked Gift #${giftNumber} (+1 point).`);
+    showGift(`🎁 Go open Gift #${giftNumber}!`);
+
+    awaitingNextTurn = true;
+    answerInput.disabled = true;
+    checkBtn.disabled = true;
+    nextTurnBtn.disabled = false;
+
+    if (revealedCount >= giftCount){
+      nextTurnBtn.textContent = "Finish";
+    } else {
+      nextTurnBtn.textContent = "Next Turn";
+    }
+  }
+
+  function nextTurn(){
+    if (revealedCount >= giftCount){
+      endGame();
+      return;
+    }
+    // advance player
+    turnIndex = (turnIndex + 1) % players.length;
+    setTurnUI();
+    loadNextQuestion();
+  }
+
+  function endGame(){
+    hideGift();
+    const winner = getWinnerText();
+    setStatus("good", `🎉 Game over! All ${giftCount} gifts were revealed. ${winner}`);
+    questionEl.textContent = "Game Over 🎄";
+    hintEl.textContent = "Hit Restart to set up a new game.";
+    answerInput.value = "";
+    answerInput.disabled = true;
+    checkBtn.disabled = true;
+    nextTurnBtn.disabled = true;
+    awaitingNextTurn = true;
+    updatePills();
+  }
+
+  function getWinnerText(){
+    if (!players.length) return "";
+    const max = Math.max(...players.map(p=>p.score));
+    const winners = players.filter(p=>p.score===max).map(p=>p.name);
+    if (winners.length === players.length) return "Everyone tied!";
+    if (winners.length === 1) return `Winner: ${winners[0]} with ${max} point(s)!`;
+    return `Tie: ${winners.join(", ")} with ${max} point(s)!`;
+  }
+
+  function resetAll(){
+    setup.style.display = "block";
+    game.style.display = "none";
+
+    giftCount = 0;
+    giftOrder = [];
+    revealedCount = 0;
+    qPool = [];
+    usedQuestions = 0;
+    currentQ = null;
+
+    players = [];
+    turnIndex = 0;
+    awaitingNextTurn = false;
+
+    giftCountInput.value = 10;
+    difficultySelect.value = "mixed";
+    playersInput.value = "";
+
+    giftCountPill.textContent = "—";
+    revealedPill.textContent = "0";
+    usedPill.textContent = "0";
+
+    buildAllQuestions(); // refresh custom pill count
+    renderScores();
+    clearStatus();
+    hideGift();
+  }
+
+  // ---------- Admin ----------
+  function lockAdmin(){
+    adminPanel.classList.add("adminHidden");
+    lockAdminBtn.disabled = true;
+    unlockAdminBtn.disabled = false;
+    adminPass.value = "";
+    newQ.value = "";
+    newA.value = "";
+  }
+
+  function unlockAdmin(){
+    if (adminPass.value !== ADMIN_PASSWORD){
+      alert("Wrong password.");
+      return;
+    }
+    adminPanel.classList.remove("adminHidden");
+    lockAdminBtn.disabled = false;
+    unlockAdminBtn.disabled = true;
+  }
+
+  function addCustomQuestion(){
+    const q = (newQ.value || "").trim();
+    const aLines = (newA.value || "").split("\n").map(s=>s.trim()).filter(Boolean);
+
+    if (!q){
+      alert("Please type a question.");
+      return;
+    }
+    if (aLines.length < 1){
+      alert("Please add at least one accepted answer (one per line).");
+      return;
+    }
+
+    const existing = loadCustom();
+    existing.push({ tag:"Custom", q, a: aLines });
+
+    // save only q/a (tag is implied)
+    saveCustom(existing);
+
+    newQ.value = "";
+    newA.value = "";
+    buildAllQuestions();
+    alert("Added! Your custom question is saved.");
+
+    // If a game is running, rebuild the pool so custom questions can appear
+    if (game.style.display !== "none"){
+      buildQuestionPool();
+    }
+  }
+
+  function clearCustom(){
+    if (!confirm("Clear ALL custom questions saved in this browser?")) return;
+    localStorage.removeItem(LS_CUSTOM);
+    buildAllQuestions();
+    alert("Custom questions cleared.");
+    if (game.style.display !== "none"){
+      buildQuestionPool();
+    }
+  }
+
+  // ---------- Events ----------
+  startBtn.addEventListener("click", () => {
+    const n = Number(giftCountInput.value);
+    if (!Number.isFinite(n) || n < 1 || n > 200){
+      alert("Please enter a gift count from 1 to 200.");
+      return;
+    }
+    startGame(Math.floor(n));
+  });
+
+  demoBtn.addEventListener("click", () => {
+    giftCountInput.value = 5;
+    playersInput.value = "Mom\nMarcus";
+    difficultySelect.value = "mixed";
+    startGame(5);
+  });
+
+  resetAllBtn.addEventListener("click", resetAll);
+  restartBtn.addEventListener("click", resetAll);
+
+  checkBtn.addEventListener("click", checkAnswer);
+
+  nextTurnBtn.addEventListener("click", nextTurn);
+
+  answerInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter"){
+      e.preventDefault();
+      if (!awaitingNextTurn) checkAnswer();
+      else if (!nextTurnBtn.disabled) nextTurnBtn.click();
+    }
+  });
+
+  unlockAdminBtn.addEventListener("click", unlockAdmin);
+  lockAdminBtn.addEventListener("click", lockAdmin);
+  addQBtn.addEventListener("click", addCustomQuestion);
+  clearCustomBtn.addEventListener("click", clearCustom);
+
+  // init
+  buildAllQuestions();
+  renderScores();
+  lockAdmin();
+</script>
+</body>
+</html>
