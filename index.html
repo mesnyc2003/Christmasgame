@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>🎄 Christmas Gift Trivia (30 Questions)</title>
+  <title>🎄 Christmas Gift Trivia (30 Gifts)</title>
   <style>
     :root{
       --bg1:#071521;
@@ -83,7 +83,7 @@
     .sub{ color: var(--muted); margin: 0 0 14px; font-size: clamp(14px, 1.2vw, 18px); font-weight: 750; }
 
     label{ display:block; font-weight: 1000; margin-bottom: 8px; font-size: clamp(14px, 1.1vw, 18px); }
-    input, select, textarea{
+    input, textarea{
       width:100%;
       background: rgba(255,255,255,.08);
       border: 1px solid rgba(255,255,255,.18);
@@ -167,7 +167,6 @@
       font-weight: 1000;
       font-size: clamp(18px, 1.6vw, 26px);
       line-height: 1.18;
-      position: relative;
     }
     .choiceLabel{
       display:inline-block;
@@ -204,11 +203,13 @@
       margin-top: 12px;
       padding: 16px;
       border-radius: 18px;
-      background: rgba(53,208,127,.12);
-      border: 1px solid rgba(53,208,127,.35);
+      background: rgba(255,204,0,.14);
+      border: 1px solid rgba(255,204,0,.40);
       display:none;
       font-weight: 1000;
-      font-size: clamp(18px, 1.5vw, 24px);
+      font-size: clamp(20px, 2.0vw, 34px);
+      box-shadow: var(--glow);
+      text-align:center;
     }
     .pickGift.show{ display:block; }
 
@@ -233,8 +234,6 @@
       text-transform: uppercase;
       letter-spacing: .8px;
     }
-
-    .adminHidden{ display:none; }
   </style>
 </head>
 
@@ -247,8 +246,8 @@
         <div class="title">🎅🎄 Christmas Gift Trivia 🎁✨</div>
         <div class="pills">
           <div class="pill"><small>Gifts Won</small> <span id="giftsWonPill">0</span>/30</div>
+          <div class="pill"><small>Gifts Left</small> <span id="giftsLeftPill">30</span></div>
           <div class="pill"><small>Deck Left</small> <span id="deckLeftPill">30</span></div>
-          <div class="pill"><small>Wrong Reused</small> <span id="wrongReusePill">0</span></div>
         </div>
       </div>
     </div>
@@ -258,8 +257,8 @@
       <div class="card">
         <h1 style="margin:0 0 8px 0;">TV Mode</h1>
         <p class="sub">
-          Exactly <b>30 questions</b>. A question only repeats if the player got it wrong.
-          Wrong = skip turn + question goes to the end of the deck.
+          Exactly <b>30 questions</b>. A question repeats only if it was answered wrong.
+          Correct = +1 point + random gift number (1–30, no repeats).
         </p>
 
         <!-- SETUP -->
@@ -290,7 +289,7 @@
           <div class="divider"></div>
 
           <div class="badge">
-            <div>Q <span id="qCounter">1</span></div>
+            <div>Question <span id="qCounter">1</span></div>
             <span>• 30-question deck</span>
           </div>
 
@@ -308,7 +307,7 @@
         </div>
       </div>
 
-      <!-- LEADERBOARD + ADMIN -->
+      <!-- LEADERBOARD -->
       <div class="card">
         <h2>Leaderboard 🏆</h2>
         <div style="border-radius: 18px; overflow:hidden; border: 1px solid rgba(255,255,255,.14); background: var(--card2);">
@@ -319,60 +318,11 @@
             </tbody>
           </table>
         </div>
-
-        <div class="divider"></div>
-
-        <h2>Admin (Replace Questions) 🔒</h2>
-        <div class="sub" style="margin-bottom:10px;">Password: <b>Marcus</b></div>
-
-        <label for="adminPass">Password</label>
-        <input id="adminPass" type="password" placeholder="Enter password to unlock admin" />
-
-        <div class="row" style="margin-top:10px;">
-          <button class="btnNext" id="unlockAdminBtn">Unlock</button>
-          <button id="lockAdminBtn" disabled>Lock</button>
-        </div>
-
-        <div id="adminPanel" class="adminHidden" style="margin-top:14px;">
-          <div class="divider"></div>
-
-          <div class="sub" style="margin-bottom:10px;">
-            This game uses exactly <b>30 questions</b>. Admin replaces a slot (1–30).
-          </div>
-
-          <label for="slotNum">Replace question slot (1–30)</label>
-          <input id="slotNum" type="number" min="1" max="30" value="1" />
-
-          <label for="newQ" style="margin-top:10px;">New question</label>
-          <textarea id="newQ" placeholder="Type the question..."></textarea>
-
-          <label for="newChoices" style="margin-top:10px;">Choices (4 lines = A, B, C, D)</label>
-          <textarea id="newChoices" placeholder="A) ...&#10;B) ...&#10;C) ...&#10;D) ..."></textarea>
-
-          <label for="correctIndex" style="margin-top:10px;">Correct choice</label>
-          <select id="correctIndex">
-            <option value="0">A</option>
-            <option value="1">B</option>
-            <option value="2">C</option>
-            <option value="3">D</option>
-          </select>
-
-          <div class="row" style="margin-top:10px;">
-            <button class="btnStart" id="saveReplaceBtn">Replace Slot ✅</button>
-            <button class="btnDanger" id="restoreDefaultBtn">Restore Defaults</button>
-          </div>
-
-          <div class="sub" style="margin-top:10px;">Changes are saved in this browser.</div>
-        </div>
       </div>
     </div>
   </div>
 
 <script>
-  // ---------- Config ----------
-  const ADMIN_PASSWORD = "Marcus";
-  const LS_Q30 = "xmas_q30_mcq_v1";
-
   // ---------- Helpers ----------
   const $ = (id) => document.getElementById(id);
 
@@ -384,7 +334,6 @@
     }
     return a;
   }
-
   function escapeHtml(s){
     return String(s).replace(/[&<>"']/g, (c)=>({
       "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
@@ -401,20 +350,39 @@
     el.className = "status";
     el.textContent = "";
   }
-
-  function showPickGift(text){
+  function showGift(num){
     const el = $("pickGift");
     el.classList.add("show");
-    el.textContent = text;
+    el.innerHTML = `🎁 Pick Gift <b>#${num}</b>!`;
   }
-  function hidePickGift(){
+  function hideGift(){
     const el = $("pickGift");
     el.classList.remove("show");
     el.textContent = "";
   }
 
-  // ---------- Default 30 Questions (UNIQUE) ----------
-  const DEFAULT_30 = [
+  // ---------- Snow ----------
+  function startSnow(){
+    const snow = $("snow");
+    snow.innerHTML = "";
+    const flakeCount = 42;
+    for (let i=0; i<flakeCount; i++){
+      const f = document.createElement("div");
+      f.className = "flake";
+      const size = 3 + Math.random()*6;
+      f.style.width = size + "px";
+      f.style.height = size + "px";
+      f.style.left = (Math.random()*100) + "vw";
+      f.style.opacity = (0.35 + Math.random()*0.65).toFixed(2);
+      const dur = 6 + Math.random()*10;
+      f.style.animationDuration = dur + "s";
+      f.style.animationDelay = (-Math.random()*dur) + "s";
+      snow.appendChild(f);
+    }
+  }
+
+  // ---------- 30 Questions (unique) ----------
+  const Q30 = [
     { id:"Q01", q:"What do people usually put on top of a Christmas tree?", choices:["A star or angel","A shoe","A pumpkin","A kite"], correct:0 },
     { id:"Q02", q:"What red-and-white candy is popular at Christmas?", choices:["Candy cane","Jelly bean","Gummy worm","Chocolate egg"], correct:0 },
     { id:"Q03", q:"What animal pulls Santa’s sleigh?", choices:["Reindeer","Tigers","Zebras","Camels"], correct:0 },
@@ -447,43 +415,20 @@
     { id:"Q30", q:"What does Santa deliver?", choices:["Gifts","Homework","Groceries only","Mail only"], correct:0 },
   ];
 
-  function loadQ30(){
-    try{
-      const raw = localStorage.getItem(LS_Q30);
-      if (!raw) return DEFAULT_30.slice();
-      const parsed = JSON.parse(raw);
-      if (!Array.isArray(parsed) || parsed.length !== 30) return DEFAULT_30.slice();
-
-      // Validate minimal structure
-      const ok = parsed.every((x, i) =>
-        x && typeof x.q === "string" &&
-        Array.isArray(x.choices) && x.choices.length === 4 &&
-        typeof x.correct === "number" && x.correct >= 0 && x.correct <= 3 &&
-        typeof x.id === "string"
-      );
-      return ok ? parsed : DEFAULT_30.slice();
-    }catch{
-      return DEFAULT_30.slice();
-    }
-  }
-
-  function saveQ30(list){
-    localStorage.setItem(LS_Q30, JSON.stringify(list));
-  }
-
   // ---------- Game State ----------
   const TOTAL_GIFTS = 30;
-  let q30 = loadQ30();
 
-  let deck = [];               // array of question objects in play order
+  let deck = [];
   let currentQ = null;
 
-  let players = [];            // [{name, score}]
+  let players = [];
   let turnIndex = 0;
 
-  let giftsWon = 0;            // correct answers
-  let wrongReuseCount = 0;     // number of wrong answers that requeued
+  let giftsWon = 0;
   let questionCounterShown = 0;
+
+  // Gift numbers pool (1..30) — shuffled once and drawn without repeats
+  let giftPool = [];
 
   let awaitingNext = false;
 
@@ -500,22 +445,10 @@
   const nextTurnBtn = $("nextTurnBtn");
 
   const giftsWonPill = $("giftsWonPill");
+  const giftsLeftPill = $("giftsLeftPill");
   const deckLeftPill = $("deckLeftPill");
-  const wrongReusePill = $("wrongReusePill");
 
   const scoreBody = $("scoreBody");
-
-  // Admin
-  const adminPass = $("adminPass");
-  const unlockAdminBtn = $("unlockAdminBtn");
-  const lockAdminBtn = $("lockAdminBtn");
-  const adminPanel = $("adminPanel");
-  const slotNum = $("slotNum");
-  const newQ = $("newQ");
-  const newChoices = $("newChoices");
-  const correctIndex = $("correctIndex");
-  const saveReplaceBtn = $("saveReplaceBtn");
-  const restoreDefaultBtn = $("restoreDefaultBtn");
 
   function parsePlayers(){
     const raw = (playersInput.value || "").split("\n").map(s=>s.trim()).filter(Boolean);
@@ -551,8 +484,8 @@
 
   function updatePills(){
     giftsWonPill.textContent = String(giftsWon);
+    giftsLeftPill.textContent = String(Math.max(0, TOTAL_GIFTS - giftsWon));
     deckLeftPill.textContent = String(deck.length);
-    wrongReusePill.textContent = String(wrongReuseCount);
   }
 
   function disableChoices(disabled){
@@ -571,32 +504,12 @@
     });
   }
 
-  function setStatus(type, msg){
-    const el = $("status");
-    el.className = "status show " + (type || "");
-    el.textContent = msg;
-  }
-  function clearStatus(){
-    const el = $("status");
-    el.className = "status";
-    el.textContent = "";
-  }
-
-  function showPickGift(msg){
-    const el = $("pickGift");
-    el.classList.add("show");
-    el.textContent = msg;
-  }
-  function hidePickGift(){
-    const el = $("pickGift");
-    el.classList.remove("show");
-    el.textContent = "";
-  }
-
   function buildDeck(){
-    // EXACTLY 30 questions, shuffled once at start
-    q30 = loadQ30();
-    deck = shuffle(q30);
+    deck = shuffle(Q30);
+  }
+
+  function buildGiftPool(){
+    giftPool = shuffle(Array.from({length: TOTAL_GIFTS}, (_, i) => i + 1));
   }
 
   function drawNextQuestion(){
@@ -604,15 +517,12 @@
       endGame();
       return;
     }
-
-    // If deck is empty but gifts not done (can happen only if all remaining are wrong-requeued weirdness),
-    // reshuffle whatever questions remain in q30 that aren't "removed".
     if (deck.length === 0){
-      // Safety fallback: rebuild a deck of unanswered questions (should be rare)
-      deck = shuffle(q30);
+      // Safety fallback; should only occur if you looped wrong answers a ton.
+      deck = shuffle(Q30);
     }
 
-    currentQ = deck.shift();         // take from front
+    currentQ = deck.shift();
     questionCounterShown++;
     qCounterEl.textContent = String(questionCounterShown);
 
@@ -624,7 +534,7 @@
     nextTurnBtn.disabled = true;
 
     clearStatus();
-    hidePickGift();
+    hideGift();
     updatePills();
   }
 
@@ -632,40 +542,33 @@
     if (awaitingNext) return;
 
     const p = players[turnIndex];
-
-    // Lock choices immediately so nobody can spam clicks
     disableChoices(true);
     awaitingNext = true;
 
     if (idx === currentQ.correct){
-      // Correct: remove permanently by NOT re-adding
       p.score += 1;
       giftsWon += 1;
 
+      // Draw a unique random gift number from the pool
+      const giftNum = giftPool.shift(); // never repeats
       setTurnUI();
       updatePills();
 
-      setStatus("good", `✅ Correct! ${p.name} gets +1 point. Go pick a gift! 🎁`);
-      showPickGift("🎁 Pick ANY gift you want!");
+      setStatus("good", `✅ Correct! ${p.name} gets +1 point.`);
+      showGift(giftNum);
 
-      // If that was the 30th gift, end now
       if (giftsWon >= TOTAL_GIFTS){
         nextTurnBtn.textContent = "Finish 🎉";
       } else {
         nextTurnBtn.textContent = "Next Turn";
       }
-
     } else {
-      // Wrong: re-use this question later by putting it at the END of the deck
+      // Wrong: put question back at END of deck to reuse later
       deck.push(currentQ);
-      wrongReuseCount += 1;
-
-      updatePills();
 
       const correctLetter = String.fromCharCode(65 + currentQ.correct);
       setStatus("bad", `❌ Wrong! Correct answer was ${correctLetter}. Turn skipped — next person.`);
-      hidePickGift();
-
+      hideGift();
       nextTurnBtn.textContent = "Next Turn";
     }
 
@@ -677,8 +580,6 @@
       endGame();
       return;
     }
-
-    // Always advance to next player AFTER an answer (correct or wrong)
     turnIndex = (turnIndex + 1) % players.length;
     setTurnUI();
     drawNextQuestion();
@@ -691,182 +592,14 @@
     questionTextEl.textContent = "Game Over 🎄";
     choicesEl.innerHTML = "";
 
-    // Find winner(s)
     const max = Math.max(...players.map(p=>p.score));
     const winners = players.filter(p=>p.score===max).map(p=>p.name);
 
-    setStatus("good", `🎉 All 30 gifts are claimed! Winner: ${winners.join(", ")} with ${max} point(s)!`);
-    showPickGift("🎁 Enjoy your gifts!");
+    setStatus("good", `🎉 All 30 gifts are assigned! Winner: ${winners.join(", ")} with ${max} point(s)!`);
+    showGift("DONE ✅");
   }
 
   function startGame(){
     players = parsePlayers();
-    if (players.length < 1){
-      alert("Enter at least one player name (one per line).");
-      return;
-    }
+    if (players.length < 1
 
-    // Reset state
-    turnIndex = 0;
-    giftsWon = 0;
-    wrongReuseCount = 0;
-    questionCounterShown = 0;
-    awaitingNext = false;
-
-    buildDeck();
-    setupEl.style.display = "none";
-    gameEl.style.display = "block";
-
-    setTurnUI();
-    updatePills();
-    drawNextQuestion();
-  }
-
-  function resetAll(){
-    setupEl.style.display = "block";
-    gameEl.style.display = "none";
-
-    players = [];
-    turnIndex = 0;
-    giftsWon = 0;
-    wrongReuseCount = 0;
-    questionCounterShown = 0;
-    awaitingNext = false;
-
-    deck = [];
-    currentQ = null;
-
-    playersInput.value = "";
-    giftsWonPill.textContent = "0";
-    deckLeftPill.textContent = "30";
-    wrongReusePill.textContent = "0";
-
-    renderScores();
-    clearStatus();
-    hidePickGift();
-  }
-
-  // ---------- Admin: Replace slot ----------
-  function lockAdmin(){
-    adminPanel.classList.add("adminHidden");
-    lockAdminBtn.disabled = true;
-    unlockAdminBtn.disabled = false;
-    adminPass.value = "";
-    slotNum.value = 1;
-    newQ.value = "";
-    newChoices.value = "";
-    correctIndex.value = "0";
-  }
-
-  function unlockAdmin(){
-    if (adminPass.value !== ADMIN_PASSWORD){
-      alert("Wrong password.");
-      return;
-    }
-    adminPanel.classList.remove("adminHidden");
-    lockAdminBtn.disabled = false;
-    unlockAdminBtn.disabled = true;
-  }
-
-  function replaceSlot(){
-    const slot = Number(slotNum.value);
-    if (!Number.isFinite(slot) || slot < 1 || slot > 30){
-      alert("Slot must be 1 to 30.");
-      return;
-    }
-
-    const qText = (newQ.value || "").trim();
-    const choiceLines = (newChoices.value || "").split("\n").map(s=>s.trim()).filter(Boolean);
-
-    if (!qText){
-      alert("Type a question.");
-      return;
-    }
-    if (choiceLines.length !== 4){
-      alert("Enter exactly 4 choices (one per line).");
-      return;
-    }
-
-    const correct = Number(correctIndex.value);
-    const list = loadQ30();
-    const idx = slot - 1;
-
-    list[idx] = {
-      id: list[idx].id || ("Q" + String(slot).padStart(2,"0")),
-      q: qText,
-      choices: choiceLines,
-      correct: Math.min(3, Math.max(0, correct|0))
-    };
-
-    saveQ30(list);
-    q30 = list;
-
-    alert(`Replaced slot #${slot}.`);
-
-    // If game is running, rebuild deck from saved list (fresh)
-    if (gameEl.style.display !== "none"){
-      buildDeck();
-      updatePills();
-      drawNextQuestion();
-    }
-
-    newQ.value = "";
-    newChoices.value = "";
-    correctIndex.value = "0";
-  }
-
-  function restoreDefaults(){
-    if (!confirm("Restore the original 30 questions?")) return;
-    saveQ30(DEFAULT_30);
-    q30 = DEFAULT_30.slice();
-    alert("Restored defaults.");
-
-    if (gameEl.style.display !== "none"){
-      buildDeck();
-      updatePills();
-      drawNextQuestion();
-    }
-  }
-
-  // ---------- Snow ----------
-  function startSnow(){
-    const snow = $("snow");
-    snow.innerHTML = "";
-    const flakeCount = 42;
-    for (let i=0; i<flakeCount; i++){
-      const f = document.createElement("div");
-      f.className = "flake";
-      const size = 3 + Math.random()*6;
-      f.style.width = size + "px";
-      f.style.height = size + "px";
-      f.style.left = (Math.random()*100) + "vw";
-      f.style.opacity = (0.35 + Math.random()*0.65).toFixed(2);
-      const dur = 6 + Math.random()*10;
-      f.style.animationDuration = dur + "s";
-      f.style.animationDelay = (-Math.random()*dur) + "s";
-      snow.appendChild(f);
-    }
-  }
-
-  // ---------- Events ----------
-  $("startBtn").addEventListener("click", startGame);
-  $("demoBtn").addEventListener("click", () => {
-    $("playersInput").value = "Mom\nMarcus";
-    startGame();
-  });
-  $("resetBtn").addEventListener("click", resetAll);
-  $("restartBtn").addEventListener("click", resetAll);
-  $("nextTurnBtn").addEventListener("click", nextTurn);
-
-  unlockAdminBtn.addEventListener("click", unlockAdmin);
-  lockAdminBtn.addEventListener("click", lockAdmin);
-  saveReplaceBtn.addEventListener("click", replaceSlot);
-  restoreDefaultBtn.addEventListener("click", restoreDefaults);
-
-  // init
-  renderScores();
-  lockAdmin();
-  startSnow();
-</script>
-</body>
-</html>
