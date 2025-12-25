@@ -29,7 +29,6 @@
       overflow-x:hidden;
     }
 
-    /* Snow */
     .snow{ position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 0; }
     .flake{
       position:absolute; top:-10px; border-radius: 50%;
@@ -285,7 +284,6 @@
 <body>
   <div class="snow" id="snow"></div>
 
-  <!-- Full screen gift overlay (3 seconds) -->
   <div class="overlay" id="giftOverlay" aria-live="polite" aria-atomic="true">
     <div class="overlayCard">
       <div class="overlayTitle">🎉 Correct! Pick a Gift!</div>
@@ -307,15 +305,13 @@
     </div>
 
     <div class="grid">
-      <!-- GAME -->
       <div class="card">
         <h1 style="margin:0 0 8px 0;">TV Mode</h1>
         <p class="sub">
-          Exactly <b>30 questions</b>. A question repeats only if it was answered wrong.
+          Wrong answers do <b>not</b> reveal the correct answer. Wrong = turn skipped + question recycled.
           Correct = +1 point + random gift number (1–30, no repeats) + full-screen display (3s).
         </p>
 
-        <!-- SETUP -->
         <div id="setup">
           <div class="row">
             <div class="field">
@@ -333,7 +329,6 @@
           </div>
         </div>
 
-        <!-- PLAY -->
         <div id="game" style="display:none;">
           <div class="turnRow">
             <div class="turnChip">👤 Turn: <span id="turnName">—</span></div>
@@ -361,7 +356,6 @@
         </div>
       </div>
 
-      <!-- LEADERBOARD -->
       <div class="card">
         <h2>Leaderboard 🏆</h2>
         <div style="border-radius: 18px; overflow:hidden; border: 1px solid rgba(255,255,255,.14); background: var(--card2);">
@@ -373,15 +367,12 @@
           </table>
         </div>
         <div class="divider"></div>
-        <div class="sub">
-          🔊 Tip: Browsers require a click to enable sound. Click <b>Start Game</b> first, then sound works.
-        </div>
+        <div class="sub">🔊 Tip: Click <b>Start Game</b> first to enable sound.</div>
       </div>
     </div>
   </div>
 
 <script>
-  // ---------- Helpers ----------
   const $ = (id) => document.getElementById(id);
 
   function shuffle(arr){
@@ -420,7 +411,6 @@
     el.textContent = "";
   }
 
-  // ---------- Snow ----------
   function startSnow(){
     const snow = $("snow");
     snow.innerHTML = "";
@@ -440,17 +430,18 @@
     }
   }
 
-  // ---------- Sound (WebAudio) ----------
+  // Sound
   let audioCtx = null;
-
   function getAudioCtx(){
-    if (!audioCtx){
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    }
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     return audioCtx;
   }
-
-  // Simple "ding" (two notes)
+  async function resumeAudioIfNeeded(){
+    try{
+      const ctx = getAudioCtx();
+      if (ctx.state === "suspended") await ctx.resume();
+    }catch{}
+  }
   function playDing(){
     const ctx = getAudioCtx();
     const now = ctx.currentTime;
@@ -458,7 +449,7 @@
     const osc1 = ctx.createOscillator();
     const gain1 = ctx.createGain();
     osc1.type = "sine";
-    osc1.frequency.setValueAtTime(880, now); // A5
+    osc1.frequency.setValueAtTime(880, now);
     gain1.gain.setValueAtTime(0.0001, now);
     gain1.gain.exponentialRampToValueAtTime(0.25, now + 0.01);
     gain1.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
@@ -469,7 +460,7 @@
     const osc2 = ctx.createOscillator();
     const gain2 = ctx.createGain();
     osc2.type = "sine";
-    osc2.frequency.setValueAtTime(1175, now + 0.12); // D6-ish
+    osc2.frequency.setValueAtTime(1175, now + 0.12);
     gain2.gain.setValueAtTime(0.0001, now + 0.12);
     gain2.gain.exponentialRampToValueAtTime(0.22, now + 0.13);
     gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.32);
@@ -477,8 +468,6 @@
     osc2.start(now + 0.12);
     osc2.stop(now + 0.34);
   }
-
-  // Simple "buzzer" (descending saw)
   function playBuzz(){
     const ctx = getAudioCtx();
     const now = ctx.currentTime;
@@ -493,7 +482,6 @@
     gain.gain.exponentialRampToValueAtTime(0.18, now + 0.01);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.36);
 
-    // Slight filter to soften harshness
     const filter = ctx.createBiquadFilter();
     filter.type = "lowpass";
     filter.frequency.setValueAtTime(800, now);
@@ -503,36 +491,22 @@
     osc.stop(now + 0.38);
   }
 
-  // Resume audio on user gesture (Start Game click does this)
-  async function resumeAudioIfNeeded(){
-    try{
-      const ctx = getAudioCtx();
-      if (ctx.state === "suspended") await ctx.resume();
-    }catch{}
-  }
-
-  // ---------- FULL SCREEN Gift overlay ----------
+  // Gift overlay
   let overlayTimer = null;
   function showGiftOverlay(num){
     const overlay = $("giftOverlay");
-    const numEl = $("overlayGiftNum");
-    numEl.textContent = "#" + num;
+    $("overlayGiftNum").textContent = "#" + num;
     overlay.classList.add("show");
-
     if (overlayTimer) clearTimeout(overlayTimer);
-    overlayTimer = setTimeout(() => {
-      overlay.classList.remove("show");
-    }, 3000);
+    overlayTimer = setTimeout(() => overlay.classList.remove("show"), 3000);
   }
-
-  // Allow click overlay to close early
   $("giftOverlay").addEventListener("click", () => {
     $("giftOverlay").classList.remove("show");
     if (overlayTimer) clearTimeout(overlayTimer);
     overlayTimer = null;
   });
 
-  // ---------- 30 Questions ----------
+  // Questions
   const Q30 = [
     { id:"Q01", q:"What do people usually put on top of a Christmas tree?", choices:["A star or angel","A shoe","A pumpkin","A kite"], correct:0 },
     { id:"Q02", q:"What red-and-white candy is popular at Christmas?", choices:["Candy cane","Jelly bean","Gummy worm","Chocolate egg"], correct:0 },
@@ -566,7 +540,6 @@
     { id:"Q30", q:"What does Santa deliver?", choices:["Gifts","Homework","Groceries only","Mail only"], correct:0 },
   ];
 
-  // ---------- Game State ----------
   const TOTAL_GIFTS = 30;
 
   let deck = [];
@@ -578,15 +551,12 @@
   let giftsWon = 0;
   let questionCounterShown = 0;
 
-  // Gift numbers pool (1..30) — shuffled once and drawn without repeats
   let giftPool = [];
-
   let awaitingNext = false;
 
-  // ---------- UI ----------
+  // UI refs
   const setupEl = $("setup");
   const gameEl = $("game");
-
   const playersInput = $("playersInput");
   const turnNameEl = $("turnName");
   const turnScoreEl = $("turnScore");
@@ -594,11 +564,9 @@
   const questionTextEl = $("questionText");
   const choicesEl = $("choices");
   const nextTurnBtn = $("nextTurnBtn");
-
   const giftsWonPill = $("giftsWonPill");
   const giftsLeftPill = $("giftsLeftPill");
   const deckLeftPill = $("deckLeftPill");
-
   const scoreBody = $("scoreBody");
 
   function parsePlayers(){
@@ -655,22 +623,12 @@
     });
   }
 
-  function buildDeck(){
-    deck = shuffle(Q30);
-  }
-
-  function buildGiftPool(){
-    giftPool = shuffle(Array.from({length: TOTAL_GIFTS}, (_, i) => i + 1));
-  }
+  function buildDeck(){ deck = shuffle(Q30); }
+  function buildGiftPool(){ giftPool = shuffle(Array.from({length: TOTAL_GIFTS}, (_, i) => i + 1)); }
 
   function drawNextQuestion(){
-    if (giftsWon >= TOTAL_GIFTS){
-      endGame();
-      return;
-    }
-    if (deck.length === 0){
-      deck = shuffle(Q30);
-    }
+    if (giftsWon >= TOTAL_GIFTS){ endGame(); return; }
+    if (deck.length === 0){ deck = shuffle(Q30); }
 
     currentQ = deck.shift();
     questionCounterShown++;
@@ -699,33 +657,22 @@
       p.score += 1;
       giftsWon += 1;
 
-      const giftNum = giftPool.shift(); // unique
+      const giftNum = giftPool.shift();
       setTurnUI();
       updatePills();
 
       setStatus("good", `✅ Correct! ${p.name} gets +1 point.`);
       showGiftBox(giftNum);
       showGiftOverlay(giftNum);
-
-      // Sounds
       playDing();
 
-      if (giftsWon >= TOTAL_GIFTS){
-        nextTurnBtn.textContent = "Finish 🎉";
-      } else {
-        nextTurnBtn.textContent = "Next Turn";
-      }
+      nextTurnBtn.textContent = (giftsWon >= TOTAL_GIFTS) ? "Finish 🎉" : "Next Turn";
     } else {
-      // Wrong => reuse question later
+      // WRONG: DO NOT reveal correct answer
       deck.push(currentQ);
-
-      const correctLetter = String.fromCharCode(65 + currentQ.correct);
-      setStatus("bad", `❌ Wrong! Correct answer was ${correctLetter}. Turn skipped — next person.`);
+      setStatus("bad", `❌ Wrong! Turn skipped — next person.`);
       hideGiftBox();
-
-      // Sounds
       playBuzz();
-
       nextTurnBtn.textContent = "Next Turn";
     }
 
@@ -733,10 +680,7 @@
   }
 
   function nextTurn(){
-    if (giftsWon >= TOTAL_GIFTS){
-      endGame();
-      return;
-    }
+    if (giftsWon >= TOTAL_GIFTS){ endGame(); return; }
     turnIndex = (turnIndex + 1) % players.length;
     setTurnUI();
     drawNextQuestion();
@@ -745,14 +689,13 @@
   function endGame(){
     disableChoices(true);
     nextTurnBtn.disabled = true;
-
     questionTextEl.textContent = "Game Over 🎄";
     choicesEl.innerHTML = "";
 
     const max = Math.max(...players.map(p=>p.score));
     const winners = players.filter(p=>p.score===max).map(p=>p.name);
-
     setStatus("good", `🎉 All 30 gifts are assigned! Winner: ${winners.join(", ")} with ${max} point(s)!`);
+
     const giftEl = $("giftBox");
     giftEl.classList.add("show");
     giftEl.textContent = "✅ DONE — all gifts are taken!";
@@ -808,7 +751,7 @@
     $("giftOverlay").classList.remove("show");
   }
 
-  // ---------- Events ----------
+  // Events
   $("startBtn").addEventListener("click", startGame);
   $("demoBtn").addEventListener("click", async () => {
     $("playersInput").value = "Mom\nMarcus";
