@@ -17,6 +17,7 @@
       --red:#ff5a5f;
       --line: rgba(255,255,255,.16);
       --glow: 0 0 22px rgba(255, 204, 0, .22);
+      --shadow: 0 18px 45px rgba(0,0,0,.35);
     }
     *{ box-sizing:border-box; }
     html, body{ height:100%; }
@@ -27,6 +28,8 @@
       background: radial-gradient(1400px 900px at 15% 10%, #164f7e 0%, var(--bg2) 55%, var(--bg1) 100%);
       overflow-x:hidden;
     }
+
+    /* Snow */
     .snow{ position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 0; }
     .flake{
       position:absolute; top:-10px; border-radius: 50%;
@@ -44,7 +47,7 @@
       border: 1px solid rgba(255,255,255,.14);
       border-radius: 22px;
       padding: 14px 18px;
-      box-shadow: 0 18px 45px rgba(0,0,0,.35);
+      box-shadow: var(--shadow);
       position: relative;
       overflow:hidden;
     }
@@ -76,14 +79,14 @@
       border: 1px solid var(--line);
       border-radius: 22px;
       padding: 18px;
-      box-shadow: 0 18px 45px rgba(0,0,0,.35);
+      box-shadow: var(--shadow);
       position: relative;
       overflow:hidden;
     }
     .sub{ color: var(--muted); margin: 0 0 14px; font-size: clamp(14px, 1.2vw, 18px); font-weight: 750; }
 
     label{ display:block; font-weight: 1000; margin-bottom: 8px; font-size: clamp(14px, 1.1vw, 18px); }
-    input, textarea{
+    textarea{
       width:100%;
       background: rgba(255,255,255,.08);
       border: 1px solid rgba(255,255,255,.18);
@@ -93,8 +96,9 @@
       outline: none;
       font-size: clamp(16px, 1.4vw, 20px);
       font-weight: 850;
+      min-height: 120px;
+      resize: vertical;
     }
-    textarea{ min-height: 120px; resize: vertical; }
     .row{ display:flex; gap: 12px; flex-wrap: wrap; align-items: center; }
     .field{ flex: 1; min-width: 260px; }
     .divider{ height: 1px; background: rgba(255,255,255,.14); margin: 16px 0; }
@@ -199,7 +203,7 @@
     .status.good{ border-color: rgba(53,208,127,.55); }
     .status.bad{ border-color: rgba(255,90,95,.55); }
 
-    .pickGift{
+    .giftBox{
       margin-top: 12px;
       padding: 16px;
       border-radius: 18px;
@@ -211,7 +215,7 @@
       box-shadow: var(--glow);
       text-align:center;
     }
-    .pickGift.show{ display:block; }
+    .giftBox.show{ display:block; }
 
     .scoreTable{
       width:100%;
@@ -234,11 +238,61 @@
       text-transform: uppercase;
       letter-spacing: .8px;
     }
+
+    /* FULL SCREEN GIFT OVERLAY */
+    .overlay{
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      background: radial-gradient(900px 600px at 50% 40%, rgba(255,204,0,.20), rgba(0,0,0,.65));
+      backdrop-filter: blur(6px);
+      padding: 24px;
+    }
+    .overlay.show{ display:flex; }
+    .overlayCard{
+      width: min(980px, 92vw);
+      border-radius: 26px;
+      border: 1px solid rgba(255,255,255,.20);
+      background: rgba(10, 28, 44, .78);
+      box-shadow: 0 24px 70px rgba(0,0,0,.55);
+      padding: 28px 22px;
+    }
+    .overlayTitle{
+      font-weight: 1000;
+      font-size: clamp(28px, 3.2vw, 52px);
+      letter-spacing: .4px;
+      margin: 0 0 10px;
+    }
+    .overlayGift{
+      font-weight: 1000;
+      font-size: clamp(70px, 10vw, 140px);
+      margin: 8px 0 8px;
+      text-shadow: 0 0 28px rgba(255,204,0,.35);
+    }
+    .overlaySub{
+      color: var(--muted);
+      font-weight: 850;
+      font-size: clamp(16px, 1.4vw, 22px);
+      margin: 0;
+    }
   </style>
 </head>
 
 <body>
   <div class="snow" id="snow"></div>
+
+  <!-- Full screen gift overlay (3 seconds) -->
+  <div class="overlay" id="giftOverlay" aria-live="polite" aria-atomic="true">
+    <div class="overlayCard">
+      <div class="overlayTitle">🎉 Correct! Pick a Gift!</div>
+      <div class="overlayGift" id="overlayGiftNum">#1</div>
+      <p class="overlaySub">Get up and grab the gift with this number 🎁</p>
+    </div>
+  </div>
 
   <div class="wrap">
     <div class="ribbon">
@@ -258,7 +312,7 @@
         <h1 style="margin:0 0 8px 0;">TV Mode</h1>
         <p class="sub">
           Exactly <b>30 questions</b>. A question repeats only if it was answered wrong.
-          Correct = +1 point + random gift number (1–30, no repeats).
+          Correct = +1 point + random gift number (1–30, no repeats) + full-screen display (3s).
         </p>
 
         <!-- SETUP -->
@@ -303,7 +357,7 @@
           </div>
 
           <div id="status" class="status"></div>
-          <div id="pickGift" class="pickGift"></div>
+          <div id="giftBox" class="giftBox"></div>
         </div>
       </div>
 
@@ -317,6 +371,10 @@
               <tr><td colspan="2" style="color:var(--muted); font-weight:900;">Start a game to see scores.</td></tr>
             </tbody>
           </table>
+        </div>
+        <div class="divider"></div>
+        <div class="sub">
+          🔊 Tip: Browsers require a click to enable sound. Click <b>Start Game</b> first, then sound works.
         </div>
       </div>
     </div>
@@ -350,13 +408,14 @@
     el.className = "status";
     el.textContent = "";
   }
-  function showGift(num){
-    const el = $("pickGift");
+
+  function showGiftBox(num){
+    const el = $("giftBox");
     el.classList.add("show");
-    el.innerHTML = `🎁 Pick Gift <b>#${num}</b>!`;
+    el.innerHTML = `🎁 Gift Number: <b>#${num}</b>`;
   }
-  function hideGift(){
-    const el = $("pickGift");
+  function hideGiftBox(){
+    const el = $("giftBox");
     el.classList.remove("show");
     el.textContent = "";
   }
@@ -381,7 +440,99 @@
     }
   }
 
-  // ---------- 30 Questions (unique) ----------
+  // ---------- Sound (WebAudio) ----------
+  let audioCtx = null;
+
+  function getAudioCtx(){
+    if (!audioCtx){
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    return audioCtx;
+  }
+
+  // Simple "ding" (two notes)
+  function playDing(){
+    const ctx = getAudioCtx();
+    const now = ctx.currentTime;
+
+    const osc1 = ctx.createOscillator();
+    const gain1 = ctx.createGain();
+    osc1.type = "sine";
+    osc1.frequency.setValueAtTime(880, now); // A5
+    gain1.gain.setValueAtTime(0.0001, now);
+    gain1.gain.exponentialRampToValueAtTime(0.25, now + 0.01);
+    gain1.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
+    osc1.connect(gain1).connect(ctx.destination);
+    osc1.start(now);
+    osc1.stop(now + 0.2);
+
+    const osc2 = ctx.createOscillator();
+    const gain2 = ctx.createGain();
+    osc2.type = "sine";
+    osc2.frequency.setValueAtTime(1175, now + 0.12); // D6-ish
+    gain2.gain.setValueAtTime(0.0001, now + 0.12);
+    gain2.gain.exponentialRampToValueAtTime(0.22, now + 0.13);
+    gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.32);
+    osc2.connect(gain2).connect(ctx.destination);
+    osc2.start(now + 0.12);
+    osc2.stop(now + 0.34);
+  }
+
+  // Simple "buzzer" (descending saw)
+  function playBuzz(){
+    const ctx = getAudioCtx();
+    const now = ctx.currentTime;
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sawtooth";
+    osc.frequency.setValueAtTime(240, now);
+    osc.frequency.exponentialRampToValueAtTime(120, now + 0.35);
+
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.18, now + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.36);
+
+    // Slight filter to soften harshness
+    const filter = ctx.createBiquadFilter();
+    filter.type = "lowpass";
+    filter.frequency.setValueAtTime(800, now);
+
+    osc.connect(filter).connect(gain).connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.38);
+  }
+
+  // Resume audio on user gesture (Start Game click does this)
+  async function resumeAudioIfNeeded(){
+    try{
+      const ctx = getAudioCtx();
+      if (ctx.state === "suspended") await ctx.resume();
+    }catch{}
+  }
+
+  // ---------- FULL SCREEN Gift overlay ----------
+  let overlayTimer = null;
+  function showGiftOverlay(num){
+    const overlay = $("giftOverlay");
+    const numEl = $("overlayGiftNum");
+    numEl.textContent = "#" + num;
+    overlay.classList.add("show");
+
+    if (overlayTimer) clearTimeout(overlayTimer);
+    overlayTimer = setTimeout(() => {
+      overlay.classList.remove("show");
+    }, 3000);
+  }
+
+  // Allow click overlay to close early
+  $("giftOverlay").addEventListener("click", () => {
+    $("giftOverlay").classList.remove("show");
+    if (overlayTimer) clearTimeout(overlayTimer);
+    overlayTimer = null;
+  });
+
+  // ---------- 30 Questions ----------
   const Q30 = [
     { id:"Q01", q:"What do people usually put on top of a Christmas tree?", choices:["A star or angel","A shoe","A pumpkin","A kite"], correct:0 },
     { id:"Q02", q:"What red-and-white candy is popular at Christmas?", choices:["Candy cane","Jelly bean","Gummy worm","Chocolate egg"], correct:0 },
@@ -518,7 +669,6 @@
       return;
     }
     if (deck.length === 0){
-      // Safety fallback; should only occur if you looped wrong answers a ton.
       deck = shuffle(Q30);
     }
 
@@ -534,7 +684,7 @@
     nextTurnBtn.disabled = true;
 
     clearStatus();
-    hideGift();
+    hideGiftBox();
     updatePills();
   }
 
@@ -549,13 +699,16 @@
       p.score += 1;
       giftsWon += 1;
 
-      // Draw a unique random gift number from the pool
-      const giftNum = giftPool.shift(); // never repeats
+      const giftNum = giftPool.shift(); // unique
       setTurnUI();
       updatePills();
 
       setStatus("good", `✅ Correct! ${p.name} gets +1 point.`);
-      showGift(giftNum);
+      showGiftBox(giftNum);
+      showGiftOverlay(giftNum);
+
+      // Sounds
+      playDing();
 
       if (giftsWon >= TOTAL_GIFTS){
         nextTurnBtn.textContent = "Finish 🎉";
@@ -563,12 +716,16 @@
         nextTurnBtn.textContent = "Next Turn";
       }
     } else {
-      // Wrong: put question back at END of deck to reuse later
+      // Wrong => reuse question later
       deck.push(currentQ);
 
       const correctLetter = String.fromCharCode(65 + currentQ.correct);
       setStatus("bad", `❌ Wrong! Correct answer was ${correctLetter}. Turn skipped — next person.`);
-      hideGift();
+      hideGiftBox();
+
+      // Sounds
+      playBuzz();
+
       nextTurnBtn.textContent = "Next Turn";
     }
 
@@ -596,10 +753,74 @@
     const winners = players.filter(p=>p.score===max).map(p=>p.name);
 
     setStatus("good", `🎉 All 30 gifts are assigned! Winner: ${winners.join(", ")} with ${max} point(s)!`);
-    showGift("DONE ✅");
+    const giftEl = $("giftBox");
+    giftEl.classList.add("show");
+    giftEl.textContent = "✅ DONE — all gifts are taken!";
   }
 
-  function startGame(){
-    players = parsePlayers();
-    if (players.length < 1
+  async function startGame(){
+    await resumeAudioIfNeeded();
 
+    players = parsePlayers();
+    if (players.length < 1){
+      alert("Enter at least one player name (one per line).");
+      return;
+    }
+
+    turnIndex = 0;
+    giftsWon = 0;
+    questionCounterShown = 0;
+    awaitingNext = false;
+
+    buildDeck();
+    buildGiftPool();
+
+    setupEl.style.display = "none";
+    gameEl.style.display = "block";
+
+    setTurnUI();
+    updatePills();
+    drawNextQuestion();
+  }
+
+  function resetAll(){
+    setupEl.style.display = "block";
+    gameEl.style.display = "none";
+
+    players = [];
+    turnIndex = 0;
+    giftsWon = 0;
+    questionCounterShown = 0;
+    awaitingNext = false;
+
+    deck = [];
+    currentQ = null;
+    giftPool = [];
+
+    playersInput.value = "";
+    giftsWonPill.textContent = "0";
+    giftsLeftPill.textContent = "30";
+    deckLeftPill.textContent = "30";
+
+    renderScores();
+    clearStatus();
+    hideGiftBox();
+    $("giftOverlay").classList.remove("show");
+  }
+
+  // ---------- Events ----------
+  $("startBtn").addEventListener("click", startGame);
+  $("demoBtn").addEventListener("click", async () => {
+    $("playersInput").value = "Mom\nMarcus";
+    await startGame();
+  });
+  $("resetBtn").addEventListener("click", resetAll);
+  $("restartBtn").addEventListener("click", resetAll);
+  $("nextTurnBtn").addEventListener("click", nextTurn);
+
+  // init
+  renderScores();
+  startSnow();
+</script>
+</body>
+</html>
